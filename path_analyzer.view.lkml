@@ -3,6 +3,7 @@ include: "path_counts.view.lkml"
 view: path_analyzer {
   derived_table: {
     sql: WITH
+        --TODO: skip the CTEs if there is no filter selected for performance.
 
         -- Find paths that contain the first event, and locate the first occurrence of that event
         first_event_selector AS (
@@ -10,7 +11,11 @@ view: path_analyzer {
               path
             , MIN(event_rank) AS first_occurrence
           FROM ${exploded_paths.SQL_TABLE_NAME}
-          WHERE event_name = {% parameter first_event_selector %}
+          WHERE
+            CASE {% parameter first_event_selector %}
+              WHEN '' THEN TRUE
+              ELSE event_table_name = {% parameter first_event_selector %}
+            END
           GROUP BY
             path
         )
@@ -24,28 +29,36 @@ view: path_analyzer {
           INNER JOIN first_event_selector fes
           ON ep.path = fes.path
             AND ep.event_rank > fes.first_occurrence
-          WHERE event_name = {% parameter last_event_selector %}
+          WHERE
+            -- event_table_name = {% parameter last_event_selector %}
+            CASE {% parameter last_event_selector %}
+              WHEN '' THEN TRUE
+              ELSE event_table_name = {% parameter last_event_selector %}
+            END
           GROUP BY
             ep.path
         )
 
         -- Find all paths with the first and last event (and their counts) and create a new path
         -- made up of only the events between the first and last event selected by the user.
-        sub_paths AS (
+        , sub_paths AS (
           SELECT
               pc.count
-            , LISTAGG(ep.event_table_name, '| ')
+            , pc.path as orig_path
+            , LISTAGG(ep.event_table_name, '- ')
               WITHIN GROUP (ORDER BY ep.event_rank) AS path
           FROM ${exploded_paths.SQL_TABLE_NAME} ep
           INNER JOIN first_event_selector fes
             ON ep.path = fes.path
-              AND ep.event_rank >= fes.event_rank
+              AND ep.event_rank >= fes.first_occurrence
           INNER JOIN last_event_selector les
             ON ep.path = les.path
-              AND ep.event_rank <= les.event_rank
+              AND ep.event_rank <= les.first_occurrence
           INNER JOIN ${path_counts.SQL_TABLE_NAME} pc
             ON ep.path = pc.path
-          GROUP BY pc.count
+          GROUP BY
+              pc.count
+            , pc.path
       )
 
       -- Sum everything up to find counts within the sub-path
@@ -61,7 +74,7 @@ view: path_analyzer {
   dimension: path {
     primary_key: yes
     type: string
-    sql: ${TABLE}.event_table_name ;;
+    sql: ${TABLE}.path ;;
   }
 
   measure: total_sessions {
@@ -74,6 +87,7 @@ view: path_analyzer {
     description: "The name of the event starting the path you would like to analyze."
     view_label: "Control Panel"
     type: string
+    suggest_explore: event_counts
     suggest_dimension: event_counts.event_table_name
   }
 
@@ -81,6 +95,7 @@ view: path_analyzer {
     description: "The name of the event ending the path you would like to analyze."
     view_label: "Control Panel"
     type: string
+    suggest_explore: event_counts
     suggest_dimension: event_counts.event_table_name
   }
 

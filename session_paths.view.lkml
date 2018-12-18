@@ -1,3 +1,4 @@
+include: "event_string_length.view.lkml"
 view: session_paths {
   derived_table: {
     sql_trigger_value: SELECT COUNT(*) FROM main_production.all_events;;
@@ -5,14 +6,20 @@ view: session_paths {
     sortkeys: ["session_id"]
     sql:
       SELECT
-          user_id
-        , session_id
-        , LISTAGG(event_table_name, '| ')
-            WITHIN GROUP (ORDER BY event_rank) AS path
-      FROM ${all_unique_events.SQL_TABLE_NAME}
+          aue.user_id
+        , aue.session_id
+        , LISTAGG(aue.event_table_name, '- ')
+            WITHIN GROUP (ORDER BY aue.event_rank) AS path
+      FROM ${all_unique_events.SQL_TABLE_NAME} aue
+      INNER JOIN ${event_string_length.SQL_TABLE_NAME} esl
+        ON aue.user_id = esl.user_id
+        AND aue.session_id = esl.session_id
+        AND aue.event_rank = esl.event_rank
+        -- Prevent list-agg character limit overflow errors
+        AND esl.cumulative_characters < 65535
       GROUP BY
-          user_id
-        , session_id
+          aue.user_id
+        , aue.session_id
       ;;
   }
 

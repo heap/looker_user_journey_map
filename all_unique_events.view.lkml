@@ -15,18 +15,18 @@ view: all_unique_events {
             ) AS name_rank
           FROM main_production.all_events ae
           LEFT JOIN ${event_counts.SQL_TABLE_NAME} ec
-            on ae.table_name = ec.table_name
+            on ae.event_table_name = ec.event_table_name
         )
 
         SELECT
             user_id
-          , time
+          , "time"
           , event_id
           , session_id
-          , event_table_name
+          , TRIM(event_table_name) AS event_table_name
           , ROW_NUMBER() OVER (
             PARTITION BY user_id, session_id
-            ORDER BY time ASC
+            ORDER BY "time" ASC
           ) AS event_rank
         FROM event_selector
         WHERE name_rank = 1
