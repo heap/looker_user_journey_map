@@ -4,39 +4,38 @@ view: path_analyzer {
   derived_table: {
     sql: WITH
 
-        -- Find paths that contain the first event, and locate the first occurrence of that event
-        first_event_selector AS (
-          SELECT
-              path
-            , MIN(event_rank) AS first_occurrence
-          FROM ${exploded_paths.SQL_TABLE_NAME}
-          WHERE
-            CASE {% parameter first_event_selector %}
-              WHEN '' THEN TRUE
-              ELSE event_table_name = {% parameter first_event_selector %}
-            END
-          GROUP BY
-            path
-        )
+        -- To avoid having to deal with commas in future conditional CTAS
+        syntax_ctas AS (SELECT TRUE)
 
+        {% if path_analyzer.first_event_selector._in_query %}
+        -- Find paths that contain the first event, and locate the first occurrence of that event
+          , first_event_selector AS (
+            SELECT
+                path
+              , MIN(event_rank) AS first_occurrence
+            FROM ${exploded_paths.SQL_TABLE_NAME}
+            WHERE event_table_name = {% parameter first_event_selector %}
+            GROUP BY
+              path
+          )
+        {% endif %}
+
+        {% if path_analyzer.last_event_selector._in_query %}
         -- Find paths that contain the last event, and locate the first occurrence of that event
         , last_event_selector AS (
           SELECT
               ep.path
             , MIN(ep.event_rank) AS first_occurrence
           FROM ${exploded_paths.SQL_TABLE_NAME} ep
-          INNER JOIN first_event_selector fes
-          ON ep.path = fes.path
-            AND ep.event_rank > fes.first_occurrence
-          WHERE
-            -- event_table_name = {% parameter last_event_selector %}
-            CASE {% parameter last_event_selector %}
-              WHEN '' THEN TRUE
-              ELSE event_table_name = {% parameter last_event_selector %}
-            END
+          {% if path_analyzer.first_event_selector._in_query %}
+            INNER JOIN first_event_selector fes
+            ON ep.path = fes.path AND ep.event_rank > fes.first_occurrence
+          {% endif %}
+          WHERE event_table_name = {% parameter last_event_selector %}
           GROUP BY
             ep.path
         )
+        {% endif %}
 
         -- Find all paths with the first and last event (and their counts) and create a new path
         -- made up of only the events between the first and last event selected by the user.
@@ -47,27 +46,16 @@ view: path_analyzer {
             , LISTAGG(ep.event_table_name, '- ')
               WITHIN GROUP (ORDER BY ep.event_rank) AS path
           FROM ${exploded_paths.SQL_TABLE_NAME} ep
-          LEFT JOIN first_event_selector fes
-            ON CASE
-                WHEN {% parameter first_event_selector %} = '' THEN FALSE
-                ELSE ep.path = fes.path AND ep.event_rank >= fes.first_occurrence
-              END
-          LEFT JOIN last_event_selector les
-            ON CASE
-                WHEN {% parameter last_event_selector %} = '' THEN FALSE
-                ELSE ep.path = les.path AND ep.event_rank <= les.first_occurrence
-              END
           INNER JOIN ${path_counts.SQL_TABLE_NAME} pc
             ON ep.path = pc.path
-          WHERE TRUE
-            AND CASE
-                  WHEN {% parameter first_event_selector %} = '' THEN TRUE
-                  ELSE fes.first_occurrence IS NOT NULL
-                END
-            AND CASE
-                  WHEN {% parameter last_event_selector %} = '' THEN TRUE
-                  ELSE les.first_occurrence IS NOT NULL
-                END
+          {% if path_analyzer.first_event_selector._in_query %}
+            INNER JOIN first_event_selector fes
+              ON ep.path = fes.path AND ep.event_rank >= fes.first_occurrence
+          {% endif %}
+          {% if path_analyzer.last_event_selector._in_query %}
+            INNER JOIN last_event_selector les
+              ON ep.path = les.path AND ep.event_rank <= les.first_occurrence
+          {% endif %}
           GROUP BY
               pc.count
             , pc.path
