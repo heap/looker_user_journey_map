@@ -1,3 +1,4 @@
+include: "base_all_events.view.lkml"
 view: event_counts {
   derived_table: {
     sql_trigger_value: SELECT COUNT(*) FROM main_production.all_events;;
@@ -5,7 +6,7 @@ view: event_counts {
     sql: SELECT
           event_table_name
         , count(*)
-      FROM main_production.all_events
+      FROM ${base_all_events.SQL_TABLE_NAME}
       GROUP BY
           event_table_name
        ;;

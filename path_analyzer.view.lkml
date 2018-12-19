@@ -3,7 +3,6 @@ include: "path_counts.view.lkml"
 view: path_analyzer {
   derived_table: {
     sql: WITH
-        --TODO: skip the CTEs if there is no filter selected for performance.
 
         -- Find paths that contain the first event, and locate the first occurrence of that event
         first_event_selector AS (
@@ -48,27 +47,52 @@ view: path_analyzer {
             , LISTAGG(ep.event_table_name, '- ')
               WITHIN GROUP (ORDER BY ep.event_rank) AS path
           FROM ${exploded_paths.SQL_TABLE_NAME} ep
-          INNER JOIN first_event_selector fes
-            ON ep.path = fes.path
-              AND ep.event_rank >= fes.first_occurrence
-          INNER JOIN last_event_selector les
-            ON ep.path = les.path
-              AND ep.event_rank <= les.first_occurrence
+          LEFT JOIN first_event_selector fes
+            ON CASE
+                WHEN {% parameter first_event_selector %} = '' THEN FALSE
+                ELSE ep.path = fes.path AND ep.event_rank >= fes.first_occurrence
+              END
+          LEFT JOIN last_event_selector les
+            ON CASE
+                WHEN {% parameter last_event_selector %} = '' THEN FALSE
+                ELSE ep.path = les.path AND ep.event_rank <= les.first_occurrence
+              END
           INNER JOIN ${path_counts.SQL_TABLE_NAME} pc
             ON ep.path = pc.path
+          WHERE TRUE
+            AND CASE
+                  WHEN {% parameter first_event_selector %} = '' THEN TRUE
+                  ELSE fes.first_occurrence IS NOT NULL
+                END
+            AND CASE
+                  WHEN {% parameter last_event_selector %} = '' THEN TRUE
+                  ELSE les.first_occurrence IS NOT NULL
+                END
           GROUP BY
               pc.count
             , pc.path
       )
 
       -- Sum everything up to find counts within the sub-path
+      , sub_path_summary as (
+        SELECT
+            path
+          , SUM(count) as count
+        FROM sub_paths
+        GROUP BY
+            path
+      )
+
       SELECT
-          path
-        , SUM(count) as count
-      FROM sub_paths
-      GROUP BY
-          path
-      ;;
+        *
+      -- If there aren't fitlers selected, go straight to the pre-built table
+      FROM {% if path_analyzer.last_event_selector._in_query or path_analyzer.first_event_selector._in_query %}
+              sub_path_summary
+           {% else %}
+              ${path_counts.SQL_TABLE_NAME}
+           {% endif %}
+
+  ;;
   }
 
   dimension: path {

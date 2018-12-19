@@ -1,3 +1,4 @@
+include: "base_all_events.view.lkml"
 include: "event_counts.view.lkml"
 view: all_unique_events {
   derived_table: {
@@ -13,9 +14,9 @@ view: all_unique_events {
               PARTITION BY ae.user_id, ae.event_id
               ORDER BY ec.count ASC
             ) AS name_rank
-          FROM main_production.all_events ae
+          FROM ${base_all_events.SQL_TABLE_NAME} ae
           LEFT JOIN ${event_counts.SQL_TABLE_NAME} ec
-            on ae.event_table_name = ec.event_table_name
+            ON ae.event_table_name = ec.event_table_name
         )
 
         SELECT

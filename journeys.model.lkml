@@ -1,4 +1,4 @@
-connection: "heap_internal"
+connection: "heap_demo_date"
 
 include: "path_analyzer.view.lkml"
 
