@@ -111,4 +111,39 @@ view: path_analyzer {
     suggest_dimension: event_counts.event_table_name
   }
 
+  dimension: step_1 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 1) ;;
+  }
+
+  dimension: step_2 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 2) ;;
+  }
+
+  dimension: step_3 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 3) ;;
+  }
+
+  dimension: step_4 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 4) ;;
+  }
+
+  dimension: step_5 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 5) ;;
+  }
+
+  dimension: step_6 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 6) ;;
+  }
+
+  dimension: step_7 {
+    type: string
+    sql: SPLIT_PART(${TABLE}.path, '- ', 7) ;;
+  }
+
 }
