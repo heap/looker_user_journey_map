@@ -8,8 +8,8 @@ view: event_string_length {
           user_id as user_id
         , session_id as session_id
         , event_rank as event_rank
-        -- +2 for the '| ' list-agg separator characters
-        , SUM(LEN(event_table_name) + 2) OVER (
+        -- +3 for the ' - ' list-agg separator characters
+        , SUM(LEN(event_table_name) + 3) OVER (
             PARTITION BY  user_id, session_id
             ORDER BY event_rank
             ROWS BETWEEN UNBOUNDED PRECEDING

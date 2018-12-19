@@ -8,7 +8,7 @@ view: session_paths {
       SELECT
           aue.user_id
         , aue.session_id
-        , LISTAGG(aue.event_table_name, '- ')
+        , LISTAGG(aue.event_table_name, ' - ')
             WITHIN GROUP (ORDER BY aue.event_rank) AS path
       FROM ${all_unique_events.SQL_TABLE_NAME} aue
       INNER JOIN ${event_string_length.SQL_TABLE_NAME} esl
