@@ -28,9 +28,8 @@ view: session_paths {
     sql: ${TABLE}.user_id || ${TABLE}.session_id;;
   }
 
-  dimension: user_id {
-    type: number
-    sql: ${TABLE}.user_id ;;
+  dimension: path {
+    sql: ${TABLE}.path ;;
   }
 
   dimension: session_id {
@@ -38,9 +37,9 @@ view: session_paths {
     sql: ${TABLE}.session_id ;;
   }
 
-  dimension: path {
-    sql: ${TABLE}.path ;;
+  dimension: user_id {
+    type: number
+    sql: ${TABLE}.user_id ;;
   }
-
 
 }

@@ -40,21 +40,6 @@ view: all_unique_events {
     sql: ${TABLE}.event_id ;;
   }
 
-  dimension: session_id {
-    type: number
-    sql: ${TABLE}.session_id ;;
-  }
-
-  dimension: user_id {
-    type: number
-    sql: ${TABLE}.user_id ;;
-  }
-
-  dimension: time {
-    type: date_time
-    sql: ${TABLE}.time ;;
-  }
-
   dimension: event_rank {
     type: number
     sql: ${TABLE}.event_rank ;;
@@ -63,6 +48,21 @@ view: all_unique_events {
   dimension: event_table_name {
     type: string
     sql: ${TABLE}.event_table_name ;;
+  }
+
+  dimension: session_id {
+    type: number
+    sql: ${TABLE}.session_id ;;
+  }
+
+  dimension: time {
+    type: date_time
+    sql: ${TABLE}.time ;;
+  }
+
+  dimension: user_id {
+    type: number
+    sql: ${TABLE}.user_id ;;
   }
 
 }
