@@ -12,15 +12,15 @@ view: event_counts {
        ;;
   }
 
+  dimension: count {
+    type: number
+    sql: ${TABLE}.count ;;
+  }
+
   dimension: event_table_name {
     primary_key: yes
     type: string
     sql: ${TABLE}.event_table_name ;;
-  }
-
-  dimension: count {
-    type: number
-    sql: ${TABLE}.count ;;
   }
 
 }

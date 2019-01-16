@@ -25,22 +25,23 @@ view: exploded_paths {
           ;;
   }
 
-  dimension: primary_key {
-    hidden: yes
-    sql:  ${TABLE}.path || ${TABLE}.event_rank ;;
-  }
-
-  dimension: path {
-    sql: ${TABLE}.path ;;
+  dimension: event_rank {
+    type: number
+    sql: ${TABLE}.event_rank ;;
   }
 
   dimension: event_table_name {
     sql: ${TABLE}.event_table_name ;;
   }
 
-  dimension: event_rank {
-    type: number
-    sql: ${TABLE}.event_rank ;;
+  dimension: path {
+    sql: ${TABLE}.path ;;
   }
+
+  dimension: primary_key {
+    hidden: yes
+    sql:  ${TABLE}.path || ${TABLE}.event_rank ;;
+  }
+
 
 }
