@@ -3,7 +3,7 @@
 Welcome to the New Heap Tracking block. This repository is currently _under construction_ but stay tuned for incoming features on user-journey-exploration.
 
 
-#User Journey Analysis:
+# User Journey Analysis:
 
 1. Make sure custom visualizations are turned on in your lab settings
 2. Make sure Perstitant Derived Tables under connections are turned on
